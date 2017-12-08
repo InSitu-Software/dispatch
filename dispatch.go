@@ -1,3 +1,9 @@
+// Package dispatch provides a simple event-like concurrent way of listening to
+// and emitting event-like messages.
+// The basic idea is to have "things" (other packages) that provide a
+// PackageDescription which defines which events trigger which callbacks.
+// Those callbacks can be handled in the thing itself by implementing an eventLoop
+// listening on the EventChannel of dispatch or by dispatch itself
 package dispatch
 
 import (
