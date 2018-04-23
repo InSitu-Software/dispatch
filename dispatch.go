@@ -7,8 +7,6 @@
 package dispatch
 
 import (
-	"encoding/json"
-
 	"github.com/sirupsen/logrus"
 )
 
@@ -23,7 +21,7 @@ type EventListener struct {
 type EventMessage struct {
 	Namespace string
 	Action    string
-	Data      json.RawMessage
+	Data      interface{}
 }
 
 var listener map[string][]chan EventMessage
