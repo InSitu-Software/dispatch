@@ -2,59 +2,11 @@ package dispatch
 
 import "github.com/sirupsen/logrus"
 
-// EventHandleFunc defines the signature of event-callback functions
-type EventHandleFunc func(EventMessage)
-
-// EventLoopFun defines the signature of an EventLoop-Handling function for custom loop handling
-type EventLoopFun func(PackageDescription, chan EventMessage)
-
-// ActionDescription defines one event-action
-type ActionDescription struct {
+// EventListener holds all information neseccary for registering an event
+type EventListener struct {
+	Namespace    string
 	Action       string
-	Callback     EventHandleFunc
-	AnyNamespace bool
-}
-
-// PackageDescription describes a "thing" that can handle and emit events
-type PackageDescription struct {
-	Namespace string
-	Actions   []ActionDescription
-	EventLoop EventLoopFun
-}
-
-// AddEventListener adds a new event listener
-func AddEventListener(namespace, action string, eventChannel chan EventMessage) {
-	cm := ControlMessage{
-		Action: ControlAddListener,
-		ControlData: EventListener{
-			Namespace:    namespace,
-			Action:       action,
-			EventChannel: eventChannel,
-		},
-	}
-
-	control <- cm
-}
-
-// AddByDescription adds a bunch of event listener based on a PackageDescription
-func AddByDescription(d PackageDescription) {
-	eventChannel := make(chan EventMessage)
-
-	for _, action := range d.Actions {
-		ns := d.Namespace
-		if action.AnyNamespace {
-			ns = "*"
-		}
-
-		AddEventListener(ns, action.Action, eventChannel)
-	}
-
-	if d.EventLoop != nil {
-		go d.EventLoop(d, eventChannel)
-	} else {
-		go eventLoop(d, eventChannel)
-	}
-
+	EventChannel chan EventMessage
 }
 
 // eventLoop is the default eventloop handler
@@ -70,10 +22,27 @@ func eventLoop(description PackageDescription, eventChannel chan EventMessage) {
 		case msg := <-eventChannel:
 			callback, ok := hash[msg.Action]
 			if !ok {
-				logrus.WithFields(logrus.Fields{"namespace": msg.Namespace, "action": msg.Action}).Error("Missing handler for event")
+				logrus.WithFields(
+					logrus.Fields{
+						"namespace": msg.Namespace,
+						"action":    msg.Action,
+					}).Error("Missing handler for event")
 			}
 
 			callback(msg)
 		}
+	}
+}
+
+func processEvent(e EventMessage) {
+	route := toRouteString(e.Namespace, e.Action)
+
+	if _, ok := listener[route]; !ok {
+		logrus.WithField("route", route).Error("No listener for route")
+		return
+	}
+
+	for _, c := range listener[route] {
+		c <- e
 	}
 }
