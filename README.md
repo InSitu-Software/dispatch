@@ -35,7 +35,7 @@ Anhand von `namespace` und `action` erfolgt das Routing. Sprich ein Package subs
     package thing
     
     import (
-    	"gitlab.insitu.de/insitu/dispatch"
+    	"github.com/InSitu-Software/dispatch"
     	"fmt"
     )
     
